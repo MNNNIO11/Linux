@@ -1,7 +1,6 @@
 /* To print "Hello, World!" */
 #include <stdio.h>
-int main ()
+void print_hello (void)
 {
-printf("Hello, World!\n");
-return 0;
+ printf ("Hello, World!\n");
 }
