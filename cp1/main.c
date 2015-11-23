@@ -62,8 +62,8 @@ return 0;*/
           struct sigaction act, act1;
           act.sa_handler=f_handler;
           act1.sa_handler=f_handler1;
-          sigaction(SIGUSR1, &act,0);
-          sigaction(SIGUSR2, &act1,0);
+          signal(SIGUSR1, f_handler);
+          signal(SIGUSR2, f_handler1);
          // WriteLog("[MONITOR] Start Daemon\n");
          // openlog("test",LOG_PID,LOG_USER);
           syslog(LOG_INFO,"start demon");
