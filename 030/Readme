@@ -1,0 +1,11 @@
+make - сборка модуля;
+make run - загрузка модуля, создание символьного устройства в текущей директории;
+make clean - выгрузка модуля, удаление символьного устройства.
+Папка "us" - приложение для работы с символьным устройством.
+  ./us wr - write to device;
+  ./us rd - read from device;
+  ./us io - show wr/rd device statistic;
+  ./us pinfo - show current process info;
+  ./us irq - show IRQ (for device '19') count;
+
+
