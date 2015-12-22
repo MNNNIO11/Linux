@@ -106,10 +106,16 @@ ioctl(fd, 0x145, &p_info);
 }
 if (0 == strcmp(buf, "net"))
 { 
+int sc;
 ioctl(fd, 0x156, &mynetdev);
         printf("Packets: %d\n", mynetdev.xmit);
         printf("Bytes: %d\n", mynetdev.bytes);
-	printf("Bytes value: %s\n", mynetdev.netdata);
+        printf("Data: ");
+	for (sc=0;sc<50;sc++)
+  {
+    printf (" %02x", mynetdev.netdata[sc]&0xff);
+  }
+         printf("\n");
 }
 close (fd);
 

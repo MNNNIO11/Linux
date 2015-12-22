@@ -157,7 +157,7 @@ static netdev_tx_t mynetdev_startxmit(struct sk_buff *skb, struct net_device *de
   }
   else
      memcpy(priv->netdata, skb->data, skb->len);*/
-  for (sc=0;sc<100;sc++)
+  for (sc=0;sc<50;sc++)
   {
     priv->netdata[sc] = skb->data[sc];
   }
@@ -165,8 +165,13 @@ static netdev_tx_t mynetdev_startxmit(struct sk_buff *skb, struct net_device *de
   printk (KERN_INFO "Transmit ok!\n");
   printk (KERN_INFO "xmit = %d\n", priv->xmit);
   printk (KERN_INFO "bytes = %d\n", priv->bytes);
-  printk (KERN_INFO "skbdata = %s\n", skb->data);
-  printk (KERN_INFO "data = %s\n", priv->netdata);
+ // printk (KERN_INFO "skbdata = %s\n", skb->data);
+  for (sc=0;sc<50;sc++)
+  {
+    printk (KERN_INFO "%02x", priv->netdata[sc]&0xff);
+   // priv->netdata[sc] = skb->data[sc];
+  }
+  //printk (KERN_INFO "data = %s\n", priv->netdata);
   //devnet = priv;
  // mynetdev->xmit = priv->xmit;
  // mynetdev->bytes = priv->bytes;

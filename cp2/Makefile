@@ -31,3 +31,4 @@ run: default
 	#sudo dmesg -c
 	sudo mknod `pwd`/mydev c 850 50
 	sudo chmod a+rwx `pwd`/mydev
+	sudo ifconfig -a mynetdev 10.1.1.1/24 up
