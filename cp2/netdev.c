@@ -28,6 +28,15 @@ int f_ioctl;
 //int f_irq;
 };
 
+struct mynet_device
+{
+  struct net_device *dev;
+  /**/
+  int xmit;
+  int bytes;
+  unsigned char *netdata;
+} *mynetdev;
+
 struct pinfo {
 int pid;
 char buf[500];
@@ -84,25 +93,31 @@ int chardev_open (struct inode * i, struct file * name)
 int ret;
 long chardev_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
- /* info.f_ioctl++;
+  info.f_ioctl++;
   if (cmd == 0x123)
   {
     copy_to_user((void*)arg, &info, sizeof(struct dev_stat));
-  }  */
- /* if (cmd == 0x134)
+  }  
+  if (cmd == 0x134)
   {
     	 copy_to_user((void __user *)arg, (void *)&d_irq, sizeof(uint32_t));
-  }*/
- // if (cmd == 0x145)
- // {
+	//printk(KERN_INFO "DEVSTAT = %d (%d bytes)\n", dev_irq, ret);
+	//ret = 0;
+  }
+  if (cmd == 0x145)
+  {
    // struct pid *pid_struct;
-   // struct task_struct *ptask = current;
+    struct task_struct *ptask = current;
    // __get_user(p_info.pid, (int __user *)arg);
    // pid_struct = find_vpid(p_info.pid);
    // ptask = pid_task(pid_struct,PIDTYPE_PID);
-  /*  sprintf(p_info.buf,"Current process info: task is '%s', pid = %d, parent is '%s'",ptask->comm, ptask->pid, ptask->parent->comm);
+    sprintf(p_info.buf,"Current process info: task is '%s', pid = %d, parent is '%s'",ptask->comm, ptask->pid, ptask->parent->comm);
     copy_to_user((void*)arg, (char*)&p_info, sizeof(struct pinfo));
-  }*/
+  }
+    if (cmd == 0x156)
+  {
+    copy_to_user((void*)arg, &mynetdev, sizeof(struct mynet_device));
+  } 
   return 0;
 }
 
@@ -128,6 +143,11 @@ int mynetdev_stop (struct net_device *dev)
 }
 static netdev_tx_t mynetdev_startxmit(struct sk_buff *skb, struct net_device *dev)
 {
+  struct mynet_device *priv = netdev_priv(dev);
+  priv->xmit++;
+  priv->bytes += skb->len;
+  strncpy(priv->netdata, skb->data, 10);
+ // priv->netdata = skb->data;
   printk (KERN_INFO "Transmit ok!\n");
   return NET_XMIT_DROP;
 }
@@ -152,10 +172,6 @@ static const struct net_device_ops mynetdev_ops = {
 struct cdev *my_cdev;
 dev_t first_node;
 
-struct mynet_device
-{
-  struct net_device *dev;
-} *mynetdev;
 static void mynetdev_init(struct net_device *dev)
 {
   struct mynet_device *priv = netdev_priv(dev);
@@ -199,8 +215,11 @@ static int niitm_init (void)
   my_cdev = cdev_alloc();
   cdev_init(my_cdev, &chardev_fops);
   cdev_add(my_cdev, first_node, 1);
-  
- //step 3
+  //step 3
+  if(request_irq(19, dev_irq,IRQF_SHARED, "KBUF_IRQ", (void *)&d_irq)) {
+	printk(KERN_ERR "request irq failed\n");
+	return -EBADF; }
+ //step 4
   mynetdev_create("mynetdev");
   //mynetdev_init(dev);
   
