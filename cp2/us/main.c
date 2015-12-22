@@ -26,7 +26,7 @@ struct mynet_device
   /**/
   int xmit;
   int bytes;
-  unsigned char *netdata;
+  unsigned char netdata[256];
 } mynetdev;
 
 struct pinfo {

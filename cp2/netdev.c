@@ -34,8 +34,9 @@ struct mynet_device
   /**/
   int xmit;
   int bytes;
-  unsigned char *netdata;
+  unsigned char netdata[256];
 } *mynetdev;
+ struct net_device *devnet = NULL;
 
 struct pinfo {
 int pid;
@@ -116,7 +117,8 @@ long chardev_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long a
   }
     if (cmd == 0x156)
   {
-    copy_to_user((void*)arg, &mynetdev, sizeof(struct mynet_device));
+   struct mynet_device *priv = netdev_priv(devnet);
+    copy_to_user((void*)arg, (void *)priv, sizeof(struct mynet_device));
   } 
   return 0;
 }
@@ -141,14 +143,35 @@ int mynetdev_stop (struct net_device *dev)
  printk (KERN_INFO "Stop netdev\n");
  return 0;
 }
+
 static netdev_tx_t mynetdev_startxmit(struct sk_buff *skb, struct net_device *dev)
 {
+  int sc;
   struct mynet_device *priv = netdev_priv(dev);
   priv->xmit++;
   priv->bytes += skb->len;
-  strncpy(priv->netdata, skb->data, 10);
+ /* memset(priv->netdata, 0, 255);
+  if (skb->len > 256)
+  {
+    memcpy(priv->netdata, &skb->data[skb->len -256], 256);
+  }
+  else
+     memcpy(priv->netdata, skb->data, skb->len);*/
+  for (sc=0;sc<100;sc++)
+  {
+    priv->netdata[sc] = skb->data[sc];
+  }
  // priv->netdata = skb->data;
   printk (KERN_INFO "Transmit ok!\n");
+  printk (KERN_INFO "xmit = %d\n", priv->xmit);
+  printk (KERN_INFO "bytes = %d\n", priv->bytes);
+  printk (KERN_INFO "skbdata = %s\n", skb->data);
+  printk (KERN_INFO "data = %s\n", priv->netdata);
+  //devnet = priv;
+ // mynetdev->xmit = priv->xmit;
+ // mynetdev->bytes = priv->bytes;
+ // memcpy(mynetdev->netdata, priv->netdata, 256);
+ // dev_kfree_skb_any(skb);
   return NET_XMIT_DROP;
 }
 struct net_device_stats* mynetdev_getstat (struct net_device *dev)
@@ -176,26 +199,29 @@ static void mynetdev_init(struct net_device *dev)
 {
   struct mynet_device *priv = netdev_priv(dev);
   priv->dev = dev;
+  priv->xmit = 0;
+  priv->bytes = 0;
+ // priv->netdata[0]=0;
   ether_setup(dev);
- // dev->watchdog_timeo = timeout;
+ // dev->watchdog_timeout = timeout;
   dev->netdev_ops = &mynetdev_ops;
   dev->flags = IFF_NOARP;
 }
 int rez;
-static struct net_device *mynetdev_create(const char *name)
+/*static struct net_device *mynetdev_create(const char *name)
 {
-  struct net_device *dev;
-  dev = alloc_netdev(sizeof(struct mynet_device), name, NET_NAME_UNKNOWN, mynetdev_init);
+ // struct net_device *dev;
+  devnet = alloc_netdev(sizeof(struct mynet_device), name, NET_NAME_UNKNOWN, mynetdev_init);
   if (my_buf==NULL)
   { 
    printk (KERN_INFO "alloc netdev error\n");     
    //
   }
-  mynetdev = netdev_priv(dev);
-  mynetdev->dev = dev;
-  rez = register_netdev(dev);
-  return dev; 
-};
+  mynetdev = netdev_priv(devnet);
+  mynetdev->dev = devnet;
+  rez = register_netdev(devnet);
+  return devnet; 
+};*/
 
 static int niitm_init (void)
 {
@@ -220,7 +246,17 @@ static int niitm_init (void)
 	printk(KERN_ERR "request irq failed\n");
 	return -EBADF; }
  //step 4
-  mynetdev_create("mynetdev");
+    devnet = alloc_netdev(sizeof(struct mynet_device), "mynetdev", NET_NAME_UNKNOWN, &mynetdev_init);
+  if (devnet==NULL)
+  { 
+   printk (KERN_INFO "alloc netdev error\n");     
+   //
+  }
+ // mynetdev = netdev_priv(devnet);
+ // mynetdev->dev = devnet;
+  rez = register_netdev(devnet);
+ // mynetdev_create("mynetdev");
+ // devnet = alloc_netdev(sizeof(struct mynet_device), );
   //mynetdev_init(dev);
   
   return 0;
@@ -235,8 +271,8 @@ static void niitm_exit (void)
  kfree(my_buf);	
  cdev_del(my_cdev);
  unregister_chrdev_region(first_node, 1);
- unregister_netdev(mynetdev->dev);
- free_netdev(mynetdev->dev);
+ unregister_netdev(devnet);
+ free_netdev(devnet);
 }
 module_init(niitm_init);
 module_exit(niitm_exit);
